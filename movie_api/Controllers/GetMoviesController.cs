@@ -26,7 +26,7 @@ namespace movie_api.Controllers
                 }
                 catch (Exception)
                 {
-
+                    connection.Close();
                     return StatusCode(500, "Internal Server Error. Something Went Wrong !!");
                 }
 
@@ -35,16 +35,16 @@ namespace movie_api.Controllers
                 {
                     var movie = connection.QuerySingle<MovieModel>("SELECT movies.movie_id, movies.budget, movies.overview, movies.title, movie_genres.movie_genre, movie_original_languages.movie_original_language_name  FROM movies INNER JOIN movie_genres ON movies.movie_genre_id = movie_genres.movie_genre_id INNER JOIN movie_original_languages ON movie_original_languages.movie_original_language_id = movies.movie_original_language_id WHERE movies.movie_id = @MovieId; ", new { MovieId = movieId });
 
+                    connection.Close();
                     return Ok(movie);
                 }
                 catch (Exception)
                 {
-
+                    connection.Close();
                     return StatusCode(404, "Not Found. Coudn't find anything that matches given movie id, try something else.");
                 }
 
 
-                connection.Close();
 
                 
 
@@ -54,9 +54,53 @@ namespace movie_api.Controllers
 
         [Route("/api/get/movies")]
         [HttpGet]
-        public string GetMovies()
+        public IActionResult GetMovies(string searchQueryInMovieTitles)
         {
-            return "sadds";
+            using (var connection = new MySqlConnection(_sqlConnectionString))
+            {
+                try
+                {
+                    connection.Open();
+                }
+                catch (Exception)
+                {
+                    connection.Close();
+                    return StatusCode(500, "Internal Server Error. Something Went Wrong !!");
+                }
+
+
+
+
+
+                try
+                {
+                    string query = "SELECT movies.movie_id, movies.budget, movies.overview, movies.title, movie_genres.movie_genre, movie_original_languages.movie_original_language_name FROM `movies` INNER JOIN movie_genres ON movies.movie_genre_id = movie_genres.movie_genre_id INNER JOIN movie_original_languages ON movie_original_languages.movie_original_language_id = movies.movie_original_language_id WHERE movies.title LIKE '%" + searchQueryInMovieTitles + "%'";
+                    var movies = connection.Query<MovieModel>(query).ToList();
+
+                    //return 404 if search query did not match any row on database
+                    if ((movies != null) && (!movies.Any()))
+                    {
+                        connection.Close();
+                        return StatusCode(404, "Not Found. Coudn't find anything that matches given search query, try something else.");
+                    }
+
+                    connection.Close();
+                    return Ok(movies);
+                }
+                catch (Exception)
+                {
+
+                    connection.Close();
+                    return StatusCode(500, "Internal Server Error. Something Went Wrong !!");
+                }
+
+
+                    
+
+            }
+
+
+
         }
     }
 }
