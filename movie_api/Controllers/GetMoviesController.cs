@@ -16,7 +16,11 @@ namespace movie_api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetMovieDetails(int movieId)
         {
-            
+            if (movieId == 0)
+            {
+                return StatusCode(400, "Bad Request. Parameter cannot be empty or zero");
+            }
+
             using (var connection = new MySqlConnection(_sqlConnectionString))
             {
                 //try to open connection with database
@@ -54,8 +58,13 @@ namespace movie_api.Controllers
 
         [Route("/api/get/movies")]
         [HttpGet]
-        public async Task<IActionResult> GetMovies(string searchQueryInMovieTitles)
+        public async Task<IActionResult> GetMovies(string? searchQueryInMovieTitles)
         {
+            if (String.IsNullOrEmpty(searchQueryInMovieTitles))
+            {
+                return StatusCode(400, "Bad Request. Parameter cannot be empty");
+            }
+
             using (var connection = new MySqlConnection(_sqlConnectionString))
             {
                 try
