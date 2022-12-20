@@ -1,7 +1,9 @@
-﻿using Dapper;
+﻿using AutoMapper;
+using Dapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using movie_api.Models;
+using movie_api.ViewModels;
 using MySql.Data.MySqlClient;
 
 namespace movie_api.Controllers
@@ -9,6 +11,18 @@ namespace movie_api.Controllers
     [ApiController]
     public class GetMoviesController : ControllerBase
     {
+        private readonly IMapper _mapper;
+        //getting automapper object from built in DI
+        public GetMoviesController(IMapper mapper)
+        {
+            _mapper = mapper;
+        }
+
+
+
+
+        //sql connection string for mysql
+        //this normally set in appsettings.json but this is not production code so it's fine to hold here
         private static string _sqlConnectionString = "server=localhost;database=films_api_project;uid=root;password=";
 
 
@@ -16,6 +30,7 @@ namespace movie_api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetMovieDetails(int movieId)
         {
+            //If parameter sent as empty or zero returning bad request and preventing further execution of this action method
             if (movieId == 0)
             {
                 return StatusCode(400, "Bad Request. Parameter cannot be empty or zero");
@@ -40,7 +55,12 @@ namespace movie_api.Controllers
                     var movie = await connection.QuerySingleAsync<MovieModel>("SELECT movies.movie_id, movies.budget, movies.overview, movies.title, movie_genres.movie_genre, movie_original_languages.movie_original_language_name  FROM movies INNER JOIN movie_genres ON movies.movie_genre_id = movie_genres.movie_genre_id INNER JOIN movie_original_languages ON movie_original_languages.movie_original_language_id = movies.movie_original_language_id WHERE movies.movie_id = @MovieId; ", new { MovieId = movieId });
 
                     await connection.CloseAsync();
-                    return Ok(movie);
+
+
+                    //mapping MovieModel obj to MovieViewModel
+                    //In this project I coudn't see anywhere that automapper is necessary but I included here anyway because of the requirements of design document of this project
+                    var movieViewModelObj = _mapper.Map<MovieViewModel>(movie);
+                    return Ok(movieViewModelObj);
                 }
                 catch (Exception)
                 {
@@ -56,10 +76,13 @@ namespace movie_api.Controllers
 
         }
 
+
+
         [Route("/api/get/movies")]
         [HttpGet]
         public async Task<IActionResult> GetMovies(string? searchQueryInMovieTitles)
         {
+            //If parameter sent as empty returning bad request and preventing further execution of this action method
             if (String.IsNullOrEmpty(searchQueryInMovieTitles))
             {
                 return StatusCode(400, "Bad Request. Parameter cannot be empty");
@@ -83,6 +106,7 @@ namespace movie_api.Controllers
 
                 try
                 {
+                    //try to get movie rows from movies table
                     string query = "SELECT movies.movie_id, movies.budget, movies.overview, movies.title, movie_genres.movie_genre, movie_original_languages.movie_original_language_name FROM `movies` INNER JOIN movie_genres ON movies.movie_genre_id = movie_genres.movie_genre_id INNER JOIN movie_original_languages ON movie_original_languages.movie_original_language_id = movies.movie_original_language_id WHERE movies.title LIKE '%" + searchQueryInMovieTitles + "%'";
                     var result = await connection.QueryAsync<MovieModel>(query);
                     var movies = result.ToList();
@@ -95,7 +119,11 @@ namespace movie_api.Controllers
                     }
 
                     await connection.CloseAsync();
-                    return Ok(movies);
+
+                    //mapping List of MovieModel objects to List of MovieViewModel objects
+                    //In this project I coudn't see anywhere that automapper is necessary but I included here anyway because of the requirements of design document of this project
+                    var movieViewModelObjList = _mapper.Map<List<MovieViewModel>>(movies);
+                    return Ok(movieViewModelObjList);
                 }
                 catch (Exception)
                 {
