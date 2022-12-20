@@ -26,7 +26,7 @@ namespace movie_api.Controllers
         private static string _sqlConnectionString = "server=localhost;database=films_api_project;uid=root;password=";
 
 
-        [Route("/api/get/movie-details")]
+        [Route("/api/get-movie-details")]
         [HttpGet]
         public async Task<IActionResult> GetMovieDetails(int movieId)
         {
@@ -78,7 +78,7 @@ namespace movie_api.Controllers
 
 
 
-        [Route("/api/get/movies")]
+        [Route("/api/get-movies")]
         [HttpGet]
         public async Task<IActionResult> GetMovies(string? searchQueryInMovieTitles)
         {
